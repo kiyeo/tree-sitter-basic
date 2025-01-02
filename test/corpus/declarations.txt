@@ -1,0 +1,576 @@
+===
+Program
+===
+
+PROGRAM TEST
+END PROGRAM
+
+PROGRAM TEST
+
+END PROGRAM
+
+PROGRAM TEST
+RETURN
+END PROGRAM
+
+---
+
+(source_file
+  (program_definition
+    name: (identifier))
+  (program_definition
+    name: (identifier))
+  (program_definition
+    name: (identifier)
+    body: (block
+      (return_statement))))
+
+===
+Subroutine
+===
+
+SUBROUTINE TEST()
+RETURN
+END SUBROUTINE
+
+SUBROUTINE TEST(IN ASD, IN OUT B)
+RETURN B
+END SUBROUTINE
+
+---
+
+(source_file
+  (subroutine_definition
+    name: (identifier)
+    parameters: (parameter_list)
+    body: (block
+      (return_statement)))
+  (subroutine_definition
+    name: (identifier)
+    parameters: (parameter_list
+      (identifier)
+      (identifier))
+    body: (block
+      (return_statement
+        (identifier)))))
+
+===
+Variables
+===
+
+VAR B
+VAR A = ''
+VAR INPUT=A ; VAR OUTPUT = 'a'
+VAR ID = 'a':'A"':""
+
+VAR CMD = \ISELECT CUSTOMER\
+CMD:= \ WITH NAME = "\:A:\""\:B:\"\
+CMD = \ISELECT ACCOUNT\
+
+---
+
+(source_file
+  (variable_initialisation
+    variable: (identifier))
+  (variable_assignment
+    variable: (identifier)
+    (string))
+  (variable_assignment
+    variable: (identifier)
+    (identifier))
+  (variable_assignment
+    variable: (identifier)
+    (string))
+  (variable_assignment
+    variable: (identifier)
+    (concatenate_operator
+      (string)
+      (concatenate_operator
+        (string)
+        (string))))
+  (variable_assignment
+    variable: (identifier)
+    (string))
+  (variable_assignment
+    variable: (identifier)
+    (concatenate_operator
+      (string)
+      (concatenate_operator
+        (identifier)
+        (concatenate_operator
+          (string)
+          (concatenate_operator
+            (identifier)
+            (string))))))
+  (variable_assignment
+    variable: (identifier)
+    (string)))
+
+===
+Carriage Return (CRT Statement)
+===
+
+CRT 1
+
+CRT 'NEXT.INVDATE: ':OCONV(NEXT.INVDATE, 'D4/')
+
+---
+
+(source_file
+  (crt_statement
+    (number))
+  (crt_statement
+    (concatenate_operator
+      (string)
+      (intrinsic_function
+        name: (identifier)
+        argument: (identifier)
+        argument: (string)))))
+
+===
+Control Flow (IF Statement)
+===
+
+IF a > 1 THEN
+END
+
+IF a > 1 THEN
+END ELSE
+END
+
+IF a > 1 THEN
+END ELSE IF a > 1 THEN
+END ELSE IF b > 1 OR A AND B THEN
+END ELSE IF c > 1 AND NOT(A) THEN
+END ELSE
+END
+
+IF DBMISSING(MAP) THEN MAP = ""; TEST = ""
+
+---
+
+(source_file
+  (if_statement
+    condition: (binary_expression
+      left: (identifier)
+      operator: (identifier)
+      right: (number)))
+  (if_statement
+    condition: (binary_expression
+      left: (identifier)
+      operator: (identifier)
+      right: (number))
+    alternative: (else_clause))
+  (if_statement
+    condition: (binary_expression
+      left: (identifier)
+      operator: (identifier)
+      right: (number))
+    alternative: (else_if_clause
+      condition: (binary_expression
+        left: (identifier)
+        operator: (identifier)
+        right: (number)))
+    alternative: (else_if_clause
+      condition: (binary_expression
+        left: (binary_expression
+          left: (identifier)
+          operator: (identifier)
+          right: (number))
+        operator: (identifier)
+        right: (binary_expression
+          left: (identifier)
+          operator: (identifier)
+          right: (identifier))))
+    alternative: (else_if_clause
+      condition: (binary_expression
+        left: (binary_expression
+          left: (identifier)
+          operator: (identifier)
+          right: (number))
+        operator: (identifier)
+        right: (intrinsic_function
+          name: (identifier)
+          argument: (identifier))))
+    alternative: (else_clause))
+  (inline_if_statement
+    condition: (intrinsic_function
+      name: (identifier)
+      argument: (identifier))
+    body: (inline_block
+      (variable_assignment
+        variable: (identifier)
+        (string))
+      (variable_assignment
+        variable: (identifier)
+        (string)))))
+
+===
+Control Flow (BEGIN CASE Statement)
+===
+
+BEGIN CASE
+   CASE X = 0
+   CASE X = 1
+   CASE 1
+END CASE
+
+---
+
+(source_file
+  (begin_case_statement
+    (case_clause
+      (binary_expression
+        (identifier)
+        (identifier)
+        (number)))
+    (case_clause
+      (binary_expression
+        (identifier)
+        (identifier)
+        (number)))
+    (case_clause
+      (number))))
+
+===
+Control Flow (BEGIN SELECT Statement)
+===
+
+BEGIN SELECT X
+   WHEN 0
+    VAR TEST = ""
+   WHEN 1, 2
+   OTHERWISE
+END SELECT
+
+---
+
+(source_file
+  (begin_select_statement
+    (identifier)
+    (when_clause
+      (number)
+      (block
+        (variable_assignment
+          (identifier)
+          (string))))
+    (when_clause
+      (number)
+      (number))
+    (otherwise_clause)))
+
+===
+Loop (FOR Statement)
+===
+
+FOR VAR I = 1 TO 10
+	CRT I
+NEXT I
+
+FOR VAR I = 1 TO DCOUNT(MVDATA, @AM)
+   FOR VAR J = 1 TO DCOUNT(MVDATA<I>, @VM)
+      FOR VAR K = 1 TO DCOUNT(MVDATA<I, J>, @SVM)
+      NEXT K
+   NEXT J
+NEXT I
+
+---
+
+(source_file
+  (for_statement
+    (variable_assignment
+        variable: (identifier)
+      (number))
+    (number)
+    body: (block
+      (crt_statement
+        (identifier)))
+    (identifier))
+  (for_statement
+    (variable_assignment
+        variable: (identifier)
+      (number))
+    (intrinsic_function
+      name: (identifier)
+      argument: (identifier)
+      argument: (identifier))
+    body: (block
+      (for_statement
+        (variable_assignment
+            variable: (identifier)
+          (number))
+        (intrinsic_function
+          name: (identifier)
+          argument: (subscript
+            variable: (identifier)
+            (identifier))
+          argument: (identifier))
+        body: (block
+          (for_statement
+            (variable_assignment
+                variable: (identifier)
+              (number))
+            (intrinsic_function
+              name: (identifier)
+              argument: (subscript
+                variable: (identifier)
+                (identifier)
+                (identifier))
+              argument: (identifier))
+            (identifier)))
+        (identifier)))
+    (identifier)))
+
+===
+Loop (LOOP Statement)
+===
+
+VAR X = 0
+LOOP
+UNTIL X = 6 DO
+   X += 1
+   CRT X
+REPEAT
+
+VAR X = 0
+LOOP
+   X += 1
+WHILE X < 6 DO
+   CRT X
+REPEAT
+
+C = 1
+LOOP
+  X = C*2
+WHILE X < 100 DO
+  C = C + 1
+REPEAT
+
+---
+
+(source_file
+  (variable_assignment
+      variable: (identifier)
+    (number))
+  (loop_statement
+    (binary_expression
+      left: (identifier)
+      operator: (identifier)
+      right: (number))
+    body: (block
+      (variable_assignment
+        variable: (identifier)
+        (number))
+      (crt_statement
+        (identifier))))
+  (variable_assignment
+      variable: (identifier)
+    (number))
+  (loop_statement
+    body: (block
+      (variable_assignment
+        variable: (identifier)
+        (number)))
+    (binary_expression
+      left: (identifier)
+      operator: (identifier)
+      right: (number))
+    body: (block
+      (crt_statement
+        (identifier))))
+  (variable_assignment
+    variable: (identifier)
+    (number))
+  (loop_statement
+    body: (block
+      (variable_assignment
+        variable: (identifier)
+        (identifier))
+      (comment))
+    (binary_expression
+      left: (identifier)
+      operator: (identifier)
+      right: (number))
+    body: (block
+      (variable_assignment
+        variable: (identifier)
+        (binary_expression
+          left: (identifier)
+          operator: (identifier)
+          right: (number))))))
+
+===
+Subscript, Less Than and Greater Than
+===
+
+PROGRAM SUBSCRIPT
+VAR A = (B<(1>2)>)
+VAR PARAMS = (INPUT<2, (2>2)> + 1)
+PARAMS<1> = INPUT<METHOD.PARAMS>
+VAR B = INPUT<APP$VERSION> > 1
+END PROGRAM
+
+---
+
+(source_file
+  (program_definition
+    name: (identifier)
+    body: (block
+      (variable_assignment
+          variable: (identifier)
+        (subscript
+          variable: (identifier)
+          (binary_expression
+            left: (number)
+            operator: (identifier)
+            right: (number))))
+      (variable_assignment
+          variable: (identifier)
+        (binary_expression
+          left: (subscript
+            variable: (identifier)
+            (number)
+            (binary_expression
+              left: (number)
+              operator: (identifier)
+              right: (number)))
+          operator: (identifier)
+          right: (number)))
+      (variable_assignment
+        name: (identifier)
+        variable: (number)
+        (subscript
+          variable: (identifier)
+          (identifier)))
+      (variable_assignment
+          variable: (identifier)
+        (binary_expression
+          left: (subscript
+            variable: (identifier)
+            (identifier))
+          operator: (identifier)
+          right: (number))))))
+
+===
+LOCATE Statement
+===
+
+EQU VM TO CHAR(253)
+VAR CONTINENTS = "AFRICA":VM:"ASIA":VM:"SOUTH AMERICA"
+LOCATE ACONTINENT IN CONTINENTS<1> BY "AL" SETTING POSITION THEN
+  CRT ACONTINENT:" IS ALREADY THERE"
+END ELSE
+  CONTINENTS=INSERT(CONTINENTS,1,POSITION,ACONTINENT)
+END
+CRT CONTINENTS
+
+---
+
+(source_file
+  (equate_statement
+    equate: (identifier)
+    value: (char
+      argument: (number)))
+  (variable_assignment
+      variable: (identifier)
+    (concatenate_operator
+      (string)
+      (concatenate_operator
+        (identifier)
+        (concatenate_operator
+          (string)
+          (concatenate_operator
+            (identifier)
+            (string))))))
+  (locate_statement
+    string: (identifier)
+    array: (subscript
+      variable: (identifier)
+      (number))
+    seq: (string)
+    variable: (identifier)
+    body: (block
+      (crt_statement
+        (concatenate_operator
+          (identifier)
+          (string))))
+    alternative: (else_clause
+      body: (block
+        (variable_assignment
+          variable: (identifier)
+          (intrinsic_function
+            name: (identifier)
+            argument: (identifier)
+            argument: (number)
+            argument: (identifier)
+            argument: (identifier))))))
+  (crt_statement
+    (identifier)))
+
+===
+GOSUB and Label Statement
+===
+
+PRINT "CHOOSE A MENU (1, 2 OR 3)":
+INPUT MENU
+* CONFIRM THAT RESPONSE IS VALID
+LOOP
+WHILE (MENU < 1) OR (MENU > 3) DO
+   PRINT "ILLEGAL INPUT."
+   PRINT "CHOOSE A MENU (1, 2 OR 3)":
+   INPUT MENU
+REPEAT
+* BRANCH TO REQUESTED MENU
+ON MENU GOSUB MENU1, MENU2, MENU3
+*  CONTROL RETURNS HERE AFTER SUBROUTINE
+STOP
+MENU1:   *  CONTROL TRANSFERS HERE IF MENU 1 IS CHOSEN
+   RETURN
+MENU2:   *  CONTROL TRANSFERS HERE IF  MENU 2 IS CHOSEN
+   RETURN
+MENU3:   *  CONTROL TRANSFERS HERE IF MENU 3 IS CHOSEN
+   RETURN
+
+---
+
+(source_file
+  (print_statement
+    (string))
+  (input_statement
+    variable: (identifier))
+  (comment)
+  (loop_statement
+    (binary_expression
+      left: (binary_expression
+        left: (identifier)
+        operator: (identifier)
+        right: (number))
+      operator: (identifier)
+      right: (binary_expression
+        left: (identifier)
+        operator: (identifier)
+        right: (number)))
+    body: (block
+      (print_statement
+        (string))
+      (print_statement
+        (string))
+      (input_statement
+        variable: (identifier))))
+  (comment)
+  (on_gosub_statement
+    expression: (identifier)
+    (identifier)
+    (identifier)
+    (identifier))
+  (comment)
+  (stop_statement)
+  (label_statement)
+  (comment)
+  (return_statement)
+  (label_statement)
+  (comment)
+  (return_statement)
+  (label_statement)
+  (comment)
+  (return_statement))
