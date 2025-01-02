@@ -238,7 +238,7 @@ static bool parse_subscript(Scanner *scanner, TSLexer *lexer,
     lexer->result_symbol = DISAMBIGUATE_SUBSCRIPT;
 
     // we skip continous new lines
-    while (lexer->lookahead == '\n') {
+    while (lexer->lookahead == '\n' || lexer->lookahead == ' ') {
       // printf("%c", lexer->lookahead);
       lexer->advance(lexer, false);
     }
@@ -348,6 +348,47 @@ static bool parse_subscript(Scanner *scanner, TSLexer *lexer,
             lexer->advance(lexer, false);
             continue;
           }
+
+          // Check for ' OR ' and ' AND ' binary expressions
+          if (lexer->lookahead == ' ') {
+            lexer->advance(lexer, false);
+            // Treat 'A < B OR C > D' and 'A < B AND C > D' as a binary
+            // expression of two comparison operators instead of a subscript 'B
+            // OR C' or 'B AND C'. Use parentheses around 'B OR C' or 'B AND C'
+            // to parse as a template argument list.
+            if (lexer->lookahead == 'O' || lexer->lookahead == 'o') {
+              lexer->advance(lexer, false);
+              if (lexer->lookahead == 'R' || lexer->lookahead == 'r') {
+                lexer->advance(lexer, false);
+                if (lexer->lookahead == ' ') {
+                  lexer->advance(lexer, false);
+                  while (lt_stack.size > 0 &&
+                         array_back(&lt_stack)->expr_depth == expr_depth) {
+                    array_pop(&lt_stack);
+                  }
+                }
+              }
+            }
+
+            if (lexer->lookahead == 'A' || lexer->lookahead == 'a') {
+              lexer->advance(lexer, false);
+              if (lexer->lookahead == 'N' || lexer->lookahead == 'n') {
+                lexer->advance(lexer, false);
+                if (lexer->lookahead == 'D' || lexer->lookahead == 'd') {
+                  lexer->advance(lexer, false);
+                  if (lexer->lookahead == ' ') {
+                    lexer->advance(lexer, false);
+                    while (lt_stack.size > 0 &&
+                           array_back(&lt_stack)->expr_depth == expr_depth) {
+                      array_pop(&lt_stack);
+                    }
+                  }
+                }
+              }
+            }
+            continue;
+          }
+
           if (lexer->lookahead == '<') {
             lexer->advance(lexer, false);
             array_push(&lt_stack,
