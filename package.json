@@ -5,9 +5,11 @@
   "main": "index.js",
   "types": "bindings/node",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "install": "node-gyp-build",
-    "prebuildify": "prebuildify --napi --strip"
+    "lint": "eslint grammar.js",
+    "lint:fix": "eslint --fix grammar.js",
+    "prebuildify": "prebuildify --napi --strip",
+    "test": "node --test bindings/node/*_test.js"
   },
   "author": "",
   "license": "ISC",
@@ -24,8 +26,10 @@
     }
   },
   "devDependencies": {
-    "prebuildify": "^6.0.0",
-    "tree-sitter-cli": "^0.22.6"
+    "eslint": "9.17.0",
+    "eslint-config-treesitter": "1.0.2",
+    "prebuildify": "6.0.0",
+    "tree-sitter-cli": "0.22.6"
   },
   "files": [
     "grammar.js",
@@ -34,5 +38,19 @@
     "bindings/node/*",
     "queries/*",
     "src/**"
+  ],
+  "tree-sitter": [
+    {
+      "scope": "source.basic",
+      "injection-regex": "^basic$",
+      "path": ".",
+      "file-types": [
+        "b",
+        ""
+      ],
+      "highlights": [
+        "queries/highlights.scm"
+      ]
+    }
   ]
 }
