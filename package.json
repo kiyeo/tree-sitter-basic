@@ -42,7 +42,15 @@
   "tree-sitter": [
     {
       "scope": "source.basic",
-      "injection-regex": "^basic$"
+      "injection-regex": "^basic$",
+      "path": ".",
+      "file-types": [
+        "b",
+        ""
+      ],
+      "highlights": [
+        "queries/highlights.scm"
+      ]
     }
   ]
 }
