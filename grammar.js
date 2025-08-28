@@ -156,7 +156,7 @@ module.exports = grammar({
     case_clause: $ => seq(
       choice('case', 'CASE'),
       $._expression,
-      field('body', $._suite),
+      optional(field('body', $._suite)),
     ),
 
     begin_select_statement: $ => seq(
@@ -679,7 +679,10 @@ module.exports = grammar({
     number: $ => /([0-9]*[.])?[0-9]+/,
     identifier: $ => /[0-9A-Za-z\.$@_]+/,
 
-    comment: _ => token(seq('*', /.*/, repeat(seq(';', '*', /.*/)))),
+    comment: _ => token(choice(
+      seq('*', /.*/),
+      seq(';', /\s*\*.*/),
+    )),
 
     line_continuation: _ => token(seq('|', choice(seq(optional('\r'), '\n'), '\0'))),
   },
