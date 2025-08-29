@@ -2,7 +2,7 @@
   "grammars": [
     {
       "name": "basic",
-      "camelcase": "basic",
+      "camelcase": "Basic",
       "scope": "source.basic",
       "path": ".",
       "file-types": [
