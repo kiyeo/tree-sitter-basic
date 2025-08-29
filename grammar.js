@@ -28,9 +28,8 @@ module.exports = grammar({
     [$.inline_if_statement],
     [$.for_readnext_statement],
     [$._simple_statements],
-    // caused by label_statement.
-    // [$._suite],
-    // [$.block],
+    [$._suite],
+    [$.block],
   ],
   externals: $ => [
     $._string_start,
@@ -81,10 +80,10 @@ module.exports = grammar({
       field('name', $.identifier),
       optional(field('parameters', $.parameter_list)),
       field('body', $._suite),
-      choice(
+      optional(choice(
         seq('end', 'subroutine'),
         seq('END', 'SUBROUTINE'),
-      ),
+      )),
     ),
 
     function_definition: $ => seq(

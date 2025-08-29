@@ -153,30 +153,38 @@
           "type": "CHOICE",
           "members": [
             {
-              "type": "SEQ",
+              "type": "CHOICE",
               "members": [
                 {
-                  "type": "STRING",
-                  "value": "end"
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "STRING",
+                      "value": "end"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "subroutine"
+                    }
+                  ]
                 },
                 {
-                  "type": "STRING",
-                  "value": "subroutine"
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "STRING",
+                      "value": "END"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "SUBROUTINE"
+                    }
+                  ]
                 }
               ]
             },
             {
-              "type": "SEQ",
-              "members": [
-                {
-                  "type": "STRING",
-                  "value": "END"
-                },
-                {
-                  "type": "STRING",
-                  "value": "SUBROUTINE"
-                }
-              ]
+              "type": "BLANK"
             }
           ]
         }
@@ -4396,6 +4404,12 @@
     ],
     [
       "_simple_statements"
+    ],
+    [
+      "_suite"
+    ],
+    [
+      "block"
     ]
   ],
   "precedences": [],
