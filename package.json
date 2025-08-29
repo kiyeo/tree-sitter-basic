@@ -14,43 +14,28 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "node-addon-api": "^7.1.0",
-    "node-gyp-build": "^4.8.0"
+    "node-addon-api": "8.5.0",
+    "node-gyp-build": "4.8.4",
+    "tree-sitter": "0.25.0"
   },
-  "peerDependencies": {
-    "tree-sitter": "^0.21.0"
+  "devDependencies": {
+    "eslint": "9.34.0",
+    "eslint-config-treesitter": "1.0.2",
+    "prebuildify": "6.0.1",
+    "tree-sitter-cli": "0.25.8"
   },
   "peerDependenciesMeta": {
-    "tree_sitter": {
+    "tree-sitter": {
       "optional": true
     }
   },
-  "devDependencies": {
-    "eslint": "9.17.0",
-    "eslint-config-treesitter": "1.0.2",
-    "prebuildify": "6.0.0",
-    "tree-sitter-cli": "0.22.6"
-  },
   "files": [
     "grammar.js",
+    "tree-sitter.json",
     "binding.gyp",
     "prebuilds/**",
     "bindings/node/*",
     "queries/*",
     "src/**"
-  ],
-  "tree-sitter": [
-    {
-      "scope": "source.basic",
-      "injection-regex": "^basic$",
-      "path": ".",
-      "file-types": [
-        "b",
-        ""
-      ],
-      "highlights": [
-        "queries/highlights.scm"
-      ]
-    }
   ]
 }
