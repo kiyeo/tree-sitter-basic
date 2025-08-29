@@ -37,6 +37,9 @@ SUBROUTINE TEST(IN ASD, IN OUT B)
 RETURN B
 END SUBROUTINE
 
+SUBROUTINE TEST(IN ASD, IN OUT B)
+RETURN B
+
 ---
 
 (source_file
@@ -45,6 +48,14 @@ END SUBROUTINE
     parameters: (parameter_list)
     body: (block
       (return_statement)))
+  (subroutine_definition
+    name: (identifier)
+    parameters: (parameter_list
+      (identifier)
+      (identifier))
+    body: (block
+      (return_statement
+            (identifier))))
   (subroutine_definition
     name: (identifier)
     parameters: (parameter_list
