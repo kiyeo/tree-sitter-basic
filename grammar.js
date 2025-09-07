@@ -1,4 +1,3 @@
-
 const PREC = {
   DEFAULT: 0,
   LOGICAL_OR: 1,
@@ -10,7 +9,6 @@ const PREC = {
   UNARY: 14,
   POWER: 15,
   CALL: 16,
-  SUBSCRIPT: 17,
 };
 
 module.exports = grammar({
@@ -30,20 +28,19 @@ module.exports = grammar({
     [$._simple_statements],
     [$._suite],
     [$.block],
+    [$.locate_statement],
   ],
   externals: $ => [
     $._string_start,
     $._string_end,
     '\n',
-    $._subscript_start,
-    $._subscript_close,
+    $._angle_bracket_start,
+    $._angle_bracket_end,
     $._less_than,
     $._greater_than,
     $._less_than_equal,
     $._greater_than_equal,
     $._arrow,
-    $._disambiguate_label,
-    $._label_colon,
     $.error_sentinel,
   ],
 
@@ -113,13 +110,17 @@ module.exports = grammar({
       choice('end', 'END'),
     ),
 
-    inline_if_statement: $ => seq(
+    inline_if_statement: $ => prec(1, seq(
       choice('if', 'IF'),
       field('condition', $._expression),
       choice('then', 'THEN'),
       field('body', $.inline_block),
+      optional(seq(
+        choice('else', 'ELSE'),
+        field('alternative', $.inline_block),
+      )),
       optional(choice('end', 'END')),
-    ),
+    )),
 
     else_if_clause: $ => seq(
       choice(
@@ -131,13 +132,13 @@ module.exports = grammar({
       field('body', $._suite),
     ),
 
-    else_clause: $ => seq(
+    else_clause: $ => prec(-1, seq(
       choice(
         seq('end', 'else'),
         seq('END', 'ELSE'),
       ),
       field('body', $._suite),
-    ),
+    )),
 
     begin_case_statement: $ => seq(
       choice(
@@ -175,7 +176,10 @@ module.exports = grammar({
     when_clause: $ => seq(
       choice('when', 'WHEN'),
       seq($._expression, repeat(seq(',', $._expression))),
-      field('body', $._suite),
+      choice(
+        field('body', $._suite),
+        seq(';', field('body', $._simple_statement)),
+      ),
     ),
 
     otherwise_clause: $ => seq(
@@ -234,6 +238,7 @@ module.exports = grammar({
 
     _simple_statement: $ => choice(
       $._variable_statement,
+      $.dim_statement,
       $._subroutine_call_statement,
       $.return_statement,
       $._conditional_statement,
@@ -265,30 +270,34 @@ module.exports = grammar({
     ),
 
     variable_initialisation: $ => seq(
-      choice('var', 'VAR'),
-      choice(
-        field('variable', $._identifier),
-        $.mat_statement,
+      seq(choice('var', 'VAR'),
+        optional(choice('mat', 'MAT')),
       ),
+      field('name', $._identifier),
     ),
 
     variable_assignment: $ => seq(
-      field('variable',
+      optional(seq(choice('var', 'VAR'),
+        optional(choice('mat', 'MAT')),
+      )),
+      field('left',
         choice(
-          alias($.variable_initialisation, 'identifier'),
           $.identifier,
-          seq(
-            field('name', $.identifier),
-            alias($._subscript_start, '<'),
-            $._expression,
-            repeat(seq(',', $._expression)),
-            alias($._subscript_close, '>'),
-          ),
+          $._angle_bracket_expressions,
+          $.json_expression,
         ),
       ),
-      // $._disambiguate_label,
-      field('operator', choice('=', '+=', '-=', ':=')),
+      choice('=', '+=', '-=', ':='),
+      field('right', $._expression),
+    ),
+
+    dim_statement: $ => seq(
+      choice('dim', 'DIM'),
+      field('name', $._identifier),
+      '(',
       $._expression,
+      optional(seq(',', $._expression)),
+      ')',
     ),
 
     _subroutine_call_statement: $ => choice(
@@ -336,17 +345,18 @@ module.exports = grammar({
       ')',
     ),
 
-    equate_statement: $ => seq(
+    equate_statement: $ => prec(1, seq(
       choice('equ', 'EQU'),
       field('equate', $._identifier),
-      'TO',
+      choice('to', 'TO'),
       field('value', choice(
         $.string,
         $._identifier,
         $.char,
+        $.number,
       ),
       ),
-    ),
+    )),
 
     return_statement: $ => prec.right(1, seq(
       choice('return', 'RETURN'),
@@ -367,12 +377,25 @@ module.exports = grammar({
       choice('setting', 'SETTING'),
       choice(
         $.variable_initialisation,
-        field('variable', $._identifier),
+        field('name', $._identifier),
       ),
-      choice(choice('then', 'THEN'), choice('else', 'ELSE')),
-      field('body', $._suite),
-      optional(field('alternative', $.else_clause)),
-      choice('end', 'END'),
+      optional(
+        choice(
+          seq(
+            choice('then', 'THEN'),
+            field('body', $._suite),
+            optional(field('alternative', $.else_clause)),
+            choice('end', 'END'),
+          ),
+          seq(
+            choice('else', 'ELSE'),
+            field('alternative', choice(
+              $._simple_statement,
+              seq($._suite, choice('end', 'END')),
+            )),
+          ),
+        ),
+      ),
     ),
 
     for_statement: $ => seq(
@@ -383,6 +406,12 @@ module.exports = grammar({
       optional(
         seq(
           choice('step', 'STEP'),
+          $._expression,
+        ),
+      ),
+      optional(
+        seq(
+          choice('until', 'UNTIL'),
           $._expression,
         ),
       ),
@@ -458,7 +487,7 @@ module.exports = grammar({
 
     mat_statement: $ => seq(
       choice('mat', 'MAT'),
-      $.identifier,
+      field('name', $.identifier),
     ),
 
     matparse_statement: $ => seq(
@@ -516,7 +545,7 @@ module.exports = grammar({
 
     input_statement: $ => prec.right(2, seq(
       choice('input', 'INPUT'),
-      field('variable',
+      field('name',
         seq(
           $.identifier,
           optional(field('expression', seq('=', $._expression))),
@@ -535,14 +564,14 @@ module.exports = grammar({
       optional('('),
       choice(
         $.unary_expression,
-        $.subscript,
+        $._angle_bracket_expressions,
         $.binary_expression,
         $.match_expression,
         $.concatenate_operator,
-        $.intrinsic_function,
         $.string,
         $._identifier,
         $.variable_initialisation,
+        $.json_expression,
         $.char,
       ),
       optional(seq(
@@ -602,13 +631,14 @@ module.exports = grammar({
     },
 
     match_expression: $ => seq(
-      $._identifier,
+      choice($._identifier, $._angle_bracket_expressions),
       choice(
         choice('match', 'MATCH'),
         choice('matches', 'MATCHES'),
       ),
       choice(
         $._identifier,
+        $._angle_bracket_expressions,
         $.string,
       ),
     ),
@@ -624,30 +654,49 @@ module.exports = grammar({
       )),
     ),
 
-    subscript: $ => seq(
-      field('variable', $._identifier),
-      alias($._subscript_start, '<'),
-      seq(
-        $._expression,
-        repeat(seq(',', $._expression)),
-      ),
-      alias($._subscript_close, '>'),
+    _angle_bracket_expressions: $ => choice(
+      $.dynamic_array,
+      $.parentheses_expression,
     ),
 
-    intrinsic_function: $ => seq(
+    dynamic_array: $ => seq(
       field('name', $._identifier),
+      $.angle_brackets,
+    ),
+
+    angle_brackets: $ => seq(
+      alias($._angle_bracket_start, '<'),
+      seq(
+        field('attribute', $._expression),
+        optional(field('value', seq(',', $._expression,
+          optional(field('subvalue', seq(',', $._expression))),
+        ))),
+      ),
+      alias($._angle_bracket_end, '>'),
+    ),
+
+    // Generic parentheses expression that can be either function call or dimensioned array (or matrix) access
+    parentheses_expression: $ => seq(
+      field('name', $._identifier),
+      $.parentheses,
+      optional($.angle_brackets),
+    ),
+
+    parentheses: $ => seq(
       '(',
-      optional(field('argument',
-        seq(
-          $._expression,
-          repeat(seq(',', $._expression)),
-        ),
+      optional(seq(
+        field('parameter', $._expression),
+        repeat(seq(',', field('parameter', $._expression))),
       )),
       ')',
     ),
 
     json_expression: $ => seq(
       field('name', $._identifier),
+      $._json,
+    ),
+
+    _json: $ => seq(
       repeat1(
         seq(
           '{',

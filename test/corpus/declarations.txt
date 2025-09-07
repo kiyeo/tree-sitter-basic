@@ -55,7 +55,7 @@ RETURN B
       (identifier))
     body: (block
       (return_statement
-            (identifier))))
+        (identifier))))
   (subroutine_definition
     name: (identifier)
     parameters: (parameter_list
@@ -82,29 +82,29 @@ CMD = \ISELECT ACCOUNT\
 
 (source_file
   (variable_initialisation
-    variable: (identifier))
+    name: (identifier))
   (variable_assignment
-    variable: (identifier)
-    (string))
+    left: (identifier)
+    right: (string))
   (variable_assignment
-    variable: (identifier)
-    (identifier))
+    left: (identifier)
+    right: (identifier))
   (variable_assignment
-    variable: (identifier)
-    (string))
+    left: (identifier)
+    right: (string))
   (variable_assignment
-    variable: (identifier)
-    (concatenate_operator
+    left: (identifier)
+    right: (concatenate_operator
       (string)
       (concatenate_operator
         (string)
         (string))))
   (variable_assignment
-    variable: (identifier)
-    (string))
+    left: (identifier)
+    right: (string))
   (variable_assignment
-    variable: (identifier)
-    (concatenate_operator
+    left: (identifier)
+    right: (concatenate_operator
       (string)
       (concatenate_operator
         (identifier)
@@ -114,8 +114,8 @@ CMD = \ISELECT ACCOUNT\
             (identifier)
             (string))))))
   (variable_assignment
-    variable: (identifier)
-    (string)))
+    left: (identifier)
+    right: (string)))
 
 ===
 Carriage Return (CRT Statement)
@@ -133,10 +133,11 @@ CRT 'NEXT.INVDATE: ':OCONV(NEXT.INVDATE, 'D4/')
   (crt_statement
     (concatenate_operator
       (string)
-      (intrinsic_function
+      (parentheses_expression
         name: (identifier)
-        argument: (identifier)
-        argument: (string)))))
+        (parentheses
+          parameter: (identifier)
+          parameter: (string))))))
 
 ===
 Control Flow (IF Statement)
@@ -200,21 +201,23 @@ IF DBMISSING(MAP) THEN MAP = ""; TEST = ""
           operator: (identifier)
           right: (number))
         operator: (identifier)
-        right: (intrinsic_function
+        right: (parentheses_expression
           name: (identifier)
-          argument: (identifier))))
+          (parentheses
+            parameter: (identifier)))))
     alternative: (else_clause))
   (inline_if_statement
-    condition: (intrinsic_function
+    condition: (parentheses_expression
       name: (identifier)
-      argument: (identifier))
+      (parentheses
+        parameter: (identifier)))
     body: (inline_block
       (variable_assignment
-        variable: (identifier)
-        (string))
+        left: (identifier)
+        right: (string))
       (variable_assignment
-        variable: (identifier)
-        (string)))))
+        left: (identifier)
+        right: (string)))))
 
 ===
 Control Flow (BEGIN CASE Statement)
@@ -290,8 +293,8 @@ NEXT I
 (source_file
   (for_statement
     (variable_assignment
-        variable: (identifier)
-      (number))
+      left: (identifier)
+      right: (number))
     (number)
     body: (block
       (crt_statement
@@ -299,35 +302,40 @@ NEXT I
     (identifier))
   (for_statement
     (variable_assignment
-        variable: (identifier)
-      (number))
-    (intrinsic_function
+      left: (identifier)
+      right: (number))
+    (parentheses_expression
       name: (identifier)
-      argument: (identifier)
-      argument: (identifier))
+      (parentheses
+        parameter: (identifier)
+        parameter: (identifier)))
     body: (block
       (for_statement
         (variable_assignment
-            variable: (identifier)
-          (number))
-        (intrinsic_function
+          left: (identifier)
+          right: (number))
+        (parentheses_expression
           name: (identifier)
-          argument: (subscript
-            variable: (identifier)
-            (identifier))
-          argument: (identifier))
+          (parentheses
+            parameter: (dynamic_array
+              name: (identifier)
+              (angle_brackets
+                attribute: (identifier)))
+            parameter: (identifier)))
         body: (block
           (for_statement
             (variable_assignment
-                variable: (identifier)
-              (number))
-            (intrinsic_function
+              left: (identifier)
+              right: (number))
+            (parentheses_expression
               name: (identifier)
-              argument: (subscript
-                variable: (identifier)
-                (identifier)
-                (identifier))
-              argument: (identifier))
+              (parentheses
+                parameter: (dynamic_array
+                  name: (identifier)
+                  (angle_brackets
+                    attribute: (identifier)
+                    value: (identifier)))
+                parameter: (identifier)))
             (identifier)))
         (identifier)))
     (identifier)))
@@ -361,8 +369,8 @@ REPEAT
 
 (source_file
   (variable_assignment
-      variable: (identifier)
-    (number))
+    left: (identifier)
+    right: (number))
   (loop_statement
     (binary_expression
       left: (identifier)
@@ -370,18 +378,18 @@ REPEAT
       right: (number))
     body: (block
       (variable_assignment
-        variable: (identifier)
-        (number))
+        left: (identifier)
+        right: (number))
       (crt_statement
         (identifier))))
   (variable_assignment
-      variable: (identifier)
-    (number))
+    left: (identifier)
+    right: (number))
   (loop_statement
     body: (block
       (variable_assignment
-        variable: (identifier)
-        (number)))
+        left: (identifier)
+        right: (number)))
     (binary_expression
       left: (identifier)
       operator: (identifier)
@@ -390,13 +398,13 @@ REPEAT
       (crt_statement
         (identifier))))
   (variable_assignment
-    variable: (identifier)
-    (number))
+    left: (identifier)
+    right: (number))
   (loop_statement
     body: (block
       (variable_assignment
-        variable: (identifier)
-        (identifier))
+        left: (identifier)
+        right: (identifier))
       (comment))
     (binary_expression
       left: (identifier)
@@ -404,17 +412,17 @@ REPEAT
       right: (number))
     body: (block
       (variable_assignment
-        variable: (identifier)
-        (binary_expression
+        left: (identifier)
+        right: (binary_expression
           left: (identifier)
           operator: (identifier)
           right: (number))))))
 
 ===
-Subscript, Less Than and Greater Than
+Angle brackets, Less Than and Greater Than
 ===
 
-PROGRAM SUBSCRIPT
+PROGRAM ANGLE.BRACKETS
 VAR A = (B<(1>2)>)
 VAR PARAMS = (INPUT<2, (2>2)> + 1)
 PARAMS<1> = INPUT<METHOD.PARAMS>
@@ -428,37 +436,43 @@ END PROGRAM
     name: (identifier)
     body: (block
       (variable_assignment
-          variable: (identifier)
-        (subscript
-          variable: (identifier)
-          (binary_expression
-            left: (number)
-            operator: (identifier)
-            right: (number))))
-      (variable_assignment
-          variable: (identifier)
-        (binary_expression
-          left: (subscript
-            variable: (identifier)
-            (number)
-            (binary_expression
+        left: (identifier)
+        right: (dynamic_array
+          name: (identifier)
+          (angle_brackets
+            attribute: (binary_expression
               left: (number)
               operator: (identifier)
-              right: (number)))
+              right: (number)))))
+      (variable_assignment
+        left: (identifier)
+        right: (binary_expression
+          left: (dynamic_array
+            name: (identifier)
+            (angle_brackets
+              attribute: (number)
+              value: (binary_expression
+                left: (number)
+                operator: (identifier)
+                right: (number))))
           operator: (identifier)
           right: (number)))
       (variable_assignment
-        name: (identifier)
-        variable: (number)
-        (subscript
-          variable: (identifier)
-          (identifier)))
+        left: (dynamic_array
+          name: (identifier)
+          (angle_brackets
+            attribute: (number)))
+        right: (dynamic_array
+          name: (identifier)
+          (angle_brackets
+            attribute: (identifier))))
       (variable_assignment
-          variable: (identifier)
-        (binary_expression
-          left: (subscript
-            variable: (identifier)
-            (identifier))
+        left: (identifier)
+        right: (binary_expression
+          left: (dynamic_array
+            name: (identifier)
+            (angle_brackets
+              attribute: (identifier)))
           operator: (identifier)
           right: (number))))))
 
@@ -483,8 +497,8 @@ CRT CONTINENTS
     value: (char
       argument: (number)))
   (variable_assignment
-      variable: (identifier)
-    (concatenate_operator
+    left: (identifier)
+    right: (concatenate_operator
       (string)
       (concatenate_operator
         (identifier)
@@ -495,11 +509,12 @@ CRT CONTINENTS
             (string))))))
   (locate_statement
     string: (identifier)
-    array: (subscript
-      variable: (identifier)
-      (number))
+    array: (dynamic_array
+      name: (identifier)
+      (angle_brackets
+        attribute: (number)))
     seq: (string)
-    variable: (identifier)
+    name: (identifier)
     body: (block
       (crt_statement
         (concatenate_operator
@@ -508,13 +523,14 @@ CRT CONTINENTS
     alternative: (else_clause
       body: (block
         (variable_assignment
-          variable: (identifier)
-          (intrinsic_function
+          left: (identifier)
+          right: (parentheses_expression
             name: (identifier)
-            argument: (identifier)
-            argument: (number)
-            argument: (identifier)
-            argument: (identifier))))))
+            (parentheses
+              parameter: (identifier)
+              parameter: (number)
+              parameter: (identifier)
+              parameter: (identifier)))))))
   (crt_statement
     (identifier)))
 
@@ -548,7 +564,7 @@ MENU3:   *  CONTROL TRANSFERS HERE IF MENU 3 IS CHOSEN
   (print_statement
     (string))
   (input_statement
-    variable: (identifier))
+    name: (identifier))
   (comment)
   (loop_statement
     (binary_expression
@@ -567,7 +583,7 @@ MENU3:   *  CONTROL TRANSFERS HERE IF MENU 3 IS CHOSEN
       (print_statement
         (string))
       (input_statement
-        variable: (identifier))))
+        name: (identifier))))
   (comment)
   (on_gosub_statement
     expression: (identifier)
