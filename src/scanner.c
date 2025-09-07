@@ -4,9 +4,9 @@
 enum TokenType {
   STRING_START,
   STRING_END,
-  DISAMBIGUATE_SUBSCRIPT,
-  SUBSCRIPT_START,
-  SUBSCRIPT_CLOSE,
+  DISAMBIGUATE_ANGLE_BRACKET,
+  ANGLE_BRACKET_START,
+  ANGLE_BRACKET_END,
   LESS_THAN,
   GREATER_THAN,
   LESS_THAN_EQUAL,
@@ -228,14 +228,14 @@ static bool parse_subscript(Scanner *scanner, TSLexer *lexer,
                             const bool *valid_symbols) {
   // LIMITATION: statements with templates/subscripts must be on line 2 or
   // more
-  if (valid_symbols[DISAMBIGUATE_SUBSCRIPT] && lexer->lookahead == '\n') {
+  if (valid_symbols[DISAMBIGUATE_ANGLE_BRACKET] && lexer->lookahead == '\n') {
     array_clear(&scanner->is_lt_subscript_queue.items);
     initializeQueue(&scanner->is_lt_subscript_queue);
     array_clear(&scanner->is_gt_subscript_queue.items);
     initializeQueue(&scanner->is_gt_subscript_queue);
 
     lexer->mark_end(lexer);
-    lexer->result_symbol = DISAMBIGUATE_SUBSCRIPT;
+    lexer->result_symbol = DISAMBIGUATE_ANGLE_BRACKET;
 
     // we skip continous new lines
     while (lexer->lookahead == '\n' || lexer->lookahead == ' ') {
@@ -420,7 +420,7 @@ static bool parse_subscript(Scanner *scanner, TSLexer *lexer,
     return true;
   }
 
-  if (valid_symbols[SUBSCRIPT_START] || valid_symbols[SUBSCRIPT_CLOSE] ||
+  if (valid_symbols[ANGLE_BRACKET_START] || valid_symbols[ANGLE_BRACKET_END] ||
       valid_symbols[LESS_THAN_EQUAL] || valid_symbols[GREATER_THAN_EQUAL] ||
       valid_symbols[LESS_THAN] || valid_symbols[GREATER_THAN] ||
       valid_symbols[ARROW]) {
@@ -446,7 +446,7 @@ static bool parse_subscript(Scanner *scanner, TSLexer *lexer,
       if (!isEmpty(&scanner->is_lt_subscript_queue) &&
           dequeue(&scanner->is_lt_subscript_queue)) {
         lexer->mark_end(lexer);
-        lexer->result_symbol = SUBSCRIPT_START;
+        lexer->result_symbol = ANGLE_BRACKET_START;
         return true;
       }
       if (lexer->lookahead == '=') {
@@ -465,7 +465,7 @@ static bool parse_subscript(Scanner *scanner, TSLexer *lexer,
       if (!isEmpty(&scanner->is_gt_subscript_queue) &&
           dequeue(&scanner->is_gt_subscript_queue)) {
         lexer->mark_end(lexer);
-        lexer->result_symbol = SUBSCRIPT_CLOSE;
+        lexer->result_symbol = ANGLE_BRACKET_END;
         return true;
       }
       if (lexer->lookahead == '=') {

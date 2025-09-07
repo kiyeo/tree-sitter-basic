@@ -9,7 +9,7 @@
 (subroutine_definition name: (identifier) @function)
 (call_subroutine_statement name: (identifier) @function)
 (goto_statement name: (identifier) @function)
-(intrinsic_function name: (identifier) @function)
+(parentheses_expression name: (identifier) @function)
 
 ; -- Operator
 
