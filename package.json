@@ -1,6 +1,6 @@
 {
   "name": "tree-sitter-basic",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Basic Abstract Syntax Tree (AST) by tree-sitter",
   "main": "index.js",
   "types": "bindings/node",
