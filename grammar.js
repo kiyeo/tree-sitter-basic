@@ -18,17 +18,20 @@ module.exports = grammar({
     $.comment,
     /[\s\f\uFEFF\u2060\u200B]|\r?\n/,
     $.line_continuation,
+    ';',
   ],
 
   conflicts: $ => [
     [$._expression],
-    [$.inline_block],
-    [$.inline_if_statement],
     [$.for_readnext_statement],
     [$._simple_statements],
     [$._suite],
     [$.block],
     [$.locate_statement],
+    [$.program_definition],
+    [$.subroutine_definition],
+    [$._write_statement],
+    [$.if_statement],
   ],
   externals: $ => [
     $._string_start,
@@ -66,10 +69,10 @@ module.exports = grammar({
       choice('program', 'PROGRAM'),
       field('name', $.identifier),
       field('body', $._suite),
-      choice(
+      optional(choice(
         seq('end', 'program'),
         seq('END', 'PROGRAM'),
-      ),
+      )),
     ),
 
     subroutine_definition: $ => seq(
@@ -86,6 +89,7 @@ module.exports = grammar({
     function_definition: $ => seq(
       choice('function', 'FUNCTION'),
       field('name', $.identifier),
+      optional(field('parameters', $.parameter_list)),
       field('body', $._suite),
       choice(
         seq('end', 'function'),
@@ -95,7 +99,6 @@ module.exports = grammar({
 
     _conditional_statement: $ => choice(
       $.if_statement,
-      $.inline_if_statement,
       $.begin_case_statement,
       $.begin_select_statement,
     ),
@@ -104,41 +107,41 @@ module.exports = grammar({
       choice('if', 'IF'),
       field('condition', $._expression),
       choice('then', 'THEN'),
-      field('body', $._suite),
-      repeat(field('alternative', $.else_if_clause)),
-      optional(field('alternative', $.else_clause)),
-      choice('end', 'END'),
+      choice(
+        // Multiline form - requires END
+        seq(
+          field('body', $._suite),
+          repeat(field('alternative', $.else_if_clause)),
+          optional(field('alternative', $.else_clause)),
+          choice('end', 'END'),
+        ),
+        // Single-line form - no END required
+        seq(
+          field('body', $._simple_statement),
+          optional(
+            seq(
+              choice('else', 'ELSE'),
+              field('alternative', $._simple_statement),
+            ),
+          ),
+        ),
+      ),
     ),
-
-    inline_if_statement: $ => prec(1, seq(
-      choice('if', 'IF'),
-      field('condition', $._expression),
-      choice('then', 'THEN'),
-      field('body', $.inline_block),
-      optional(seq(
-        choice('else', 'ELSE'),
-        field('alternative', $.inline_block),
-      )),
-      optional(choice('end', 'END')),
-    )),
 
     else_if_clause: $ => seq(
       choice(
-        seq('end', 'else', 'if'),
-        seq('END', 'ELSE', 'IF'),
+        seq('else', 'if'),
+        seq('ELSE', 'IF'),
       ),
       field('condition', $._expression),
       choice('then', 'THEN'),
       field('body', $._suite),
     ),
 
-    else_clause: $ => prec(-1, seq(
-      choice(
-        seq('end', 'else'),
-        seq('END', 'ELSE'),
-      ),
+    else_clause: $ => seq(
+      choice('else', 'ELSE'),
       field('body', $._suite),
-    )),
+    ),
 
     begin_case_statement: $ => seq(
       choice(
@@ -223,11 +226,6 @@ module.exports = grammar({
       $._simple_statements,
     ),
 
-    inline_block: $ => seq(
-      $._simple_statement, repeat(seq(optional(';'), $._simple_statement)),
-      optional(';'),
-    ),
-
     // STATEMENTS
 
     _simple_statements: $ => seq(
@@ -237,6 +235,7 @@ module.exports = grammar({
     ),
 
     _simple_statement: $ => choice(
+      $.include_statement,
       $._variable_statement,
       $.dim_statement,
       $._subroutine_call_statement,
@@ -253,6 +252,8 @@ module.exports = grammar({
       $.exit_statement,
       $.stop_statement,
       $.continue_statement,
+      $.read_statement,
+      $.readu_statement,
       $.clearselect_statement,
       $.del_statement,
       $.abort_statement,
@@ -261,7 +262,20 @@ module.exports = grammar({
       $.printer_statement,
       $.print_statement,
       $.input_statement,
+      $.ins_statement,
+      $.convert_statement,
+      $.execute_statement,
+      $.write_statement,
+      $.writeu_statement,
+      $._end_statement,
+      $.null_statement,
       // TODO: other kinds of statements
+    ),
+
+    include_statement: $ => seq(
+      choice('$include', '$INCLUDE'),
+      field('library', alias(/[A-Z0-9-]+/, $.identifier)),
+      field('name', $._identifier),
     ),
 
     _variable_statement: $ => choice(
@@ -284,20 +298,31 @@ module.exports = grammar({
         choice(
           $.identifier,
           $._angle_bracket_expressions,
-          $.json_expression,
         ),
       ),
       choice('=', '+=', '-=', ':='),
       field('right', $._expression),
     ),
 
+    _dim_statement: $ => seq(
+      field('name', $._identifier),
+      optional(
+        seq('(',
+          $._expression,
+          optional(seq(',', $._expression)),
+          ')'),
+      ),
+    ),
+
     dim_statement: $ => seq(
       choice('dim', 'DIM'),
-      field('name', $._identifier),
-      '(',
-      $._expression,
-      optional(seq(',', $._expression)),
-      ')',
+      $._dim_statement,
+      repeat(
+        seq(
+          ',',
+          $._dim_statement,
+        ),
+      ),
     ),
 
     _subroutine_call_statement: $ => choice(
@@ -309,7 +334,7 @@ module.exports = grammar({
     ),
 
     goto_statement: $ => seq(
-      choice('goto', 'GOTO'),
+      choice('goto', 'GOTO', 'go', 'GO'),
       field('name', $._identifier),
     ),
 
@@ -337,26 +362,35 @@ module.exports = grammar({
     call_subroutine_statement: $ => seq(
       choice('call', 'CALL'),
       field('name', $._identifier),
-      '(',
-      seq(
-        $._expression,
-        repeat(seq(',', $._expression)),
+      optional(
+        seq(
+          '(',
+          seq(
+            $._expression,
+            repeat(seq(',', $._expression)),
+          ),
+          ')',
+        ),
       ),
-      ')',
     ),
 
-    equate_statement: $ => prec(1, seq(
-      choice('equ', 'EQU'),
-      field('equate', $._identifier),
-      choice('to', 'TO'),
-      field('value', choice(
-        $.string,
-        $._identifier,
-        $.char,
-        $.number,
+    _equate_statement: $ => seq(
+      field('name', $._identifier),
+      choice(
+        choice('to', 'TO'),
+        choice('lit', 'LIT', 'literally', 'LITERALLY'),
       ),
-      ),
-    )),
+      field('value', $._expression),
+    ),
+
+    equate_statement: $ => seq(
+      choice('equ', 'EQU', 'equate', 'EQUATE'),
+      $._equate_statement,
+      repeat(seq(
+        ',',
+        $._equate_statement,
+      )),
+    ),
 
     return_statement: $ => prec.right(1, seq(
       choice('return', 'RETURN'),
@@ -488,6 +522,15 @@ module.exports = grammar({
     mat_statement: $ => seq(
       choice('mat', 'MAT'),
       field('name', $.identifier),
+      optional(
+        seq(
+          '=',
+          choice(
+            field('value', $._expression),
+            seq('MAT', field('value', $._expression)),
+          ),
+        ),
+      ),
     ),
 
     matparse_statement: $ => seq(
@@ -516,7 +559,7 @@ module.exports = grammar({
       choice(
         seq(
           choice(choice('then', 'THEN'), choice('else', 'ELSE')),
-          $.inline_block,
+          $._simple_statement,
         ),
         seq(
           field('body', $._suite),
@@ -524,6 +567,99 @@ module.exports = grammar({
         ),
       ),
     ),
+
+    _locked_clause: $ => seq(
+      choice('locked', 'LOCKED'),
+      choice(
+        $._simple_statement,
+        seq(
+          field('body', $._suite),
+          'END',
+        ),
+      ),
+    ),
+
+    _on_error_clause: $ => seq(
+      choice(
+        seq('on', 'error'),
+        seq('ON', 'ERROR'),
+      ),
+      field('body', $._suite),
+      choice('end', 'END'),
+    ),
+
+    read_statement: $ => prec.right(seq(
+      choice('read', 'READ'),
+      field('variable', $._expression),
+      choice('from', 'FROM'),
+      optional(seq(field('file', $._expression), ',')),
+      field('key', $._expression),
+      optional($._on_error_clause),
+      optional(
+        choice(
+          seq(
+            choice('then', 'THEN'),
+            field('body', $._suite),
+            choice('end', 'END'),
+            optional(
+              seq(
+                choice('else', 'ELSE'),
+                field('body', $._suite),
+                choice('end', 'END'),
+              ),
+            ),
+          ),
+          seq(
+            choice('else', 'ELSE'),
+            field('body', $._suite),
+            choice('end', 'END'),
+          ),
+          seq(
+            choice('else', 'ELSE'),
+            $._simple_statement,
+          ),
+        )),
+    )),
+
+    readu_statement: $ => prec.right(seq(
+      choice('readu', 'READU'),
+      field('variable', $._expression),
+      choice('from', 'FROM'),
+      optional(seq(field('file', $._expression), ',')),
+      field('key', $._expression),
+      optional(
+        choice(
+          seq(
+            optional($._on_error_clause),
+            optional($._locked_clause),
+          ),
+          seq(
+            optional($._locked_clause),
+            optional($._on_error_clause),
+          ),
+        ),
+      ),
+      optional(
+        choice(
+          seq(
+            choice('then', 'THEN'),
+            field('body', $._suite),
+            choice('end', 'END'),
+            optional(
+              seq(
+                choice('else', 'ELSE'),
+                field('body', $._suite),
+                choice('end', 'END'),
+              ),
+            ),
+          ),
+          seq(
+            choice('else', 'ELSE'),
+            $._simple_statement,
+          ),
+        ),
+      ),
+    )),
 
     clearselect_statement: $ => seq(
       choice('clearselect', 'CLEARSELECT'),
@@ -535,13 +671,16 @@ module.exports = grammar({
       choice(choice('on', 'ON'), choice('off', 'OFF')),
     ),
 
-    print_statement: $ => prec.right(2, seq(
+    print_statement: $ => seq(
       choice('print', 'PRINT'),
-      optional(seq(choice('on', 'ON'), $.number)),
-      $._expression,
-      repeat(seq(',', $._expression)),
-      optional(':'),
-    )),
+      optional(
+        seq(
+          choice('on', 'ON'),
+          field('target', $.number),
+        ),
+      ),
+      field('data', $._expression),
+    ),
 
     input_statement: $ => prec.right(2, seq(
       choice('input', 'INPUT'),
@@ -558,6 +697,71 @@ module.exports = grammar({
       optional(seq(choice('from', 'FROM'), $._expression)),
     )),
 
+    ins_statement: $ => seq(
+      choice('ins', 'INS'),
+      field('value', $._expression),
+      choice('before', 'BEFORE'),
+      field('target', $._expression),
+    ),
+
+    convert_statement: $ => seq(
+      choice('convert', 'CONVERT'),
+      field('from', $._expression),
+      choice('to', 'TO'),
+      field('to', $._expression),
+      choice('in', 'IN'),
+      field('target', $._expression),
+    ),
+
+    execute_statement: $ => seq(
+      choice('execute', 'EXECUTE'),
+      field('command', $._expression),
+      optional(seq(
+        choice('rtnlist', 'RTNLIST'),
+        field('selectlist', $._expression),
+      )),
+      optional(seq(
+        choice('capturing', 'CAPTURING'),
+        field('output', $._expression),
+      )),
+    ),
+
+    _write_statement: $ => seq(
+      field('data', $._expression),
+      choice(
+        'to', 'TO',
+        'on', 'ON',
+      ),
+      optional(
+        seq(field('file', $._expression), ','),
+      ),
+      field('key', $._expression),
+      optional(
+        seq(
+          choice(
+            seq('on', 'error'),
+            seq('ON', 'ERROR'),
+          ),
+          field('body', $._suite),
+          choice('end', 'END'),
+        ),
+      ),
+    ),
+
+    write_statement: $ => seq(
+      choice('write', 'WRITE'),
+      $._write_statement,
+    ),
+
+    writeu_statement: $ => seq(
+      choice('writeu', 'WRITEU'),
+      $._write_statement,
+    ),
+
+    _end_statement: $ => choice('end', 'END'),
+
+    null_statement: $ => choice('null', 'NULL'),
+
     // EXPRESSION
 
     _expression: $ => seq(
@@ -571,7 +775,6 @@ module.exports = grammar({
         $.string,
         $._identifier,
         $.variable_initialisation,
-        $.json_expression,
         $.char,
       ),
       optional(seq(
@@ -643,16 +846,24 @@ module.exports = grammar({
       ),
     ),
 
-    concatenate_operator: $ => choice(
-      prec.left(1, seq(
-        $._expression,
-        repeat1(seq(':', $._expression)),
-      )),
-      prec.left(1, seq(
-        $._expression,
-        repeat1(seq(choice('cat', 'CAT'), $._expression)),
-      )),
-    ),
+    concatenate_operator: $ => prec.left(1, seq(
+      choice(
+        $.string,
+        $._identifier,
+        $.dynamic_array,
+        $.parentheses_expression,
+        $.number,
+      ),
+      ':',
+      choice(
+        $.string,
+        $._identifier,
+        $.dynamic_array,
+        $.parentheses_expression,
+        $.number,
+        $.concatenate_operator,
+      ),
+    )),
 
     _angle_bracket_expressions: $ => choice(
       $.dynamic_array,
@@ -689,21 +900,6 @@ module.exports = grammar({
         repeat(seq(',', field('parameter', $._expression))),
       )),
       ')',
-    ),
-
-    json_expression: $ => seq(
-      field('name', $._identifier),
-      $._json,
-    ),
-
-    _json: $ => seq(
-      repeat1(
-        seq(
-          '{',
-          field('argument', $._expression),
-          '}',
-        ),
-      ),
     ),
 
     char: $ => seq(
