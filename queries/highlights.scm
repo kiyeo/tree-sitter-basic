@@ -1,7 +1,12 @@
 ((string) @string)
 ((comment) @comment)
 ((number) @number)
-(equate_statement equate: (identifier) @constant)
+(equate_statement name: (identifier) @constant)
+
+; -- Variable
+
+(variable_initialisation name: (identifier) @variable)
+(variable_assignment left: (identifier) @variable)
 
 ; -- Function
 
@@ -55,6 +60,7 @@
   "IN OUT"
   "end"
   "END"
+  "$INCLUDE"
   "return"
   "RETURN"
   "var"
@@ -71,6 +77,12 @@
   "GOTO"
   "equ"
   "EQU"
+  "equate"
+  "EQUATE"
+  "lit"
+  "LIT"
+  "literally"
+  "LITERALLY"
   "gosub"
   "GOSUB"
   "select"
@@ -107,7 +119,19 @@
   "TO"
   "step"
   "STEP"
+  "read"
+  "READ"
+  "readu"
+  "READU"
+  "error"
+  "ERROR"
+  "locked"
+  "LOCKED"
   "next"
+  "write"
+  "WRITE"
+  "writeu"
+  "WRITEU"
   "NEXT"
   "readnext"
   "READNEXT"
@@ -125,6 +149,8 @@
   "ABORT"
   "stop"
   "STOP"
+  "dim"
+  "DIM"
   "mat"
   "MAT"
   "matparse"
@@ -137,6 +163,22 @@
   "OFF"
   "print"
   "PRINT"
+  "crt"
+  "CRT"
   "input"
   "INPUT"
+  "ins"
+  "INS"
+  "before"
+  "BEFORE"
+  "convert"
+  "CONVERT"
+  "execute"
+  "EXECUTE"
+  "rtnlist"
+  "RTNLIST"
+  "capturing"
+  "CAPTURING"
+  "null"
+  "NULL"
 ] @keyword

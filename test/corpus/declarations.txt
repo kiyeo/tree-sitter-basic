@@ -1,5 +1,5 @@
 ===
-Program
+PROGRAM definition
 ===
 
 PROGRAM TEST
@@ -13,6 +13,8 @@ PROGRAM TEST
 RETURN
 END PROGRAM
 
+PROGRAM TEST
+
 ---
 
 (source_file
@@ -23,10 +25,12 @@ END PROGRAM
   (program_definition
     name: (identifier)
     body: (block
-      (return_statement))))
+      (return_statement)))
+  (program_definition
+    name: (identifier)))
 
 ===
-Subroutine
+SUBROUTINE statement
 ===
 
 SUBROUTINE TEST()
@@ -66,17 +70,82 @@ RETURN B
         (identifier)))))
 
 ===
-Variables
+EQUATE statement
+===
+
+EQUATE SC TO CHAR(8)
+EQUATE TRUE TO 1, FALSE TO 0
+EQUATE FULLNAME LITERALLY "FIRST_NAME:' ':LAST_NAME"
+EQUATE FULLNAME TO FIRST_NAME:' ':LAST_NAME
+EQU PI TO 3.14159
+EQU A LIT "MYMATRIX("
+EQU C LIT ")"
+
+---
+
+(source_file
+  (equate_statement
+    name: (identifier)
+    value: (char
+      argument: (number)))
+  (equate_statement
+    name: (identifier)
+    value: (number)
+    name: (identifier)
+    value: (number))
+  (equate_statement
+    name: (identifier)
+    value: (string))
+  (equate_statement
+    name: (identifier)
+    value: (concatenate_operator
+      (identifier)
+      (concatenate_operator
+        (string)
+        (identifier))))
+  (equate_statement
+    name: (identifier)
+    value: (number))
+  (equate_statement
+    name: (identifier)
+    value: (string))
+  (equate_statement
+    name: (identifier)
+    value: (string)))
+
+===
+INCLUDE statement
+===
+
+$INCLUDE EMS-DEFS TOTAL.COM
+$INCLUDE MOD-DEFS UI.COM
+$INCLUDE EMS-DEFS EQU.INSTALL
+
+---
+
+(source_file
+  (include_statement
+    library: (identifier)
+    name: (identifier))
+  (include_statement
+    library: (identifier)
+    name: (identifier))
+  (include_statement
+    library: (identifier)
+    name: (identifier)))
+
+===
+VAR statement
 ===
 
 VAR B
 VAR A = ''
-VAR INPUT=A ; VAR OUTPUT = 'a'
+VAR IOPARAMS=A ; VAR OUT.PARAMS = 'a'
 VAR ID = 'a':'A"':""
 
-VAR CMD = \ISELECT CUSTOMER\
-CMD:= \ WITH NAME = "\:A:\""\:B:\"\
-CMD = \ISELECT ACCOUNT\
+VAR CMD = \ISELECT INSTALL\
+CMD:= \ WITH QICP.IDENT = "\:IICP:\""\:IICP2:\"\
+CMD = \ISELECT INSTALL\
 
 ---
 
@@ -166,23 +235,26 @@ IF DBMISSING(MAP) THEN MAP = ""; TEST = ""
     condition: (binary_expression
       left: (identifier)
       operator: (identifier)
-      right: (number)))
-  (if_statement
-    condition: (binary_expression
-      left: (identifier)
-      operator: (identifier)
       right: (number))
-    alternative: (else_clause))
-  (if_statement
-    condition: (binary_expression
-      left: (identifier)
-      operator: (identifier)
-      right: (number))
+    body: (block
+      (if_statement
+        condition: (binary_expression
+          left: (identifier)
+          operator: (identifier)
+          right: (number))
+        body: (block)
+        alternative: (else_clause))
+      (if_statement
+        condition: (binary_expression
+          left: (identifier)
+          operator: (identifier)
+          right: (number))))
     alternative: (else_if_clause
       condition: (binary_expression
         left: (identifier)
         operator: (identifier)
-        right: (number)))
+        right: (number))
+      body: (block))
     alternative: (else_if_clause
       condition: (binary_expression
         left: (binary_expression
@@ -193,7 +265,8 @@ IF DBMISSING(MAP) THEN MAP = ""; TEST = ""
         right: (binary_expression
           left: (identifier)
           operator: (identifier)
-          right: (identifier))))
+          right: (identifier)))
+      body: (block))
     alternative: (else_if_clause
       condition: (binary_expression
         left: (binary_expression
@@ -204,20 +277,20 @@ IF DBMISSING(MAP) THEN MAP = ""; TEST = ""
         right: (parentheses_expression
           name: (identifier)
           (parentheses
-            parameter: (identifier)))))
+            parameter: (identifier))))
+      body: (block))
     alternative: (else_clause))
-  (inline_if_statement
+  (if_statement
     condition: (parentheses_expression
       name: (identifier)
       (parentheses
         parameter: (identifier)))
-    body: (inline_block
-      (variable_assignment
-        left: (identifier)
-        right: (string))
-      (variable_assignment
-        left: (identifier)
-        right: (string)))))
+    body: (variable_assignment
+      left: (identifier)
+      right: (string)))
+  (variable_assignment
+    left: (identifier)
+    right: (string)))
 
 ===
 Control Flow (BEGIN CASE Statement)
@@ -489,11 +562,22 @@ END ELSE
 END
 CRT CONTINENTS
 
+LOCATE UTILITY.TYPE IN MAP<MAP$C$TYPE> SETTING VAR IDX THEN
+   VAR ACT.IN.PARAMS = ''
+   ACT.IN.PARAMS<1> = IOPARAMS<METHOD$PARAMS>
+   CALL NS.G2ACTIONPOINT.CALL('CRM.CONTRACTS.SUPPLY', MAP<MAP$C$STP$CONTRACTS, IDX>, ACT.IN.PARAMS, VAR ACT.OUT.PARAMS)
+   IF ACT.OUT.PARAMS<2> # '' THEN
+      IOPARAMS<CONTENT$FAIL$ATTR>   = ACT.OUT.PARAMS<2>
+      IOPARAMS<CONTENT$FAIL$REASON> = ACT.OUT.PARAMS<3>
+      RETURN
+   END
+END
+
 ---
 
 (source_file
   (equate_statement
-    equate: (identifier)
+    name: (identifier)
     value: (char
       argument: (number)))
   (variable_assignment
@@ -532,19 +616,79 @@ CRT CONTINENTS
               parameter: (identifier)
               parameter: (identifier)))))))
   (crt_statement
-    (identifier)))
+    (identifier))
+  (locate_statement
+    string: (identifier)
+    array: (dynamic_array
+      name: (identifier)
+      (angle_brackets
+        attribute: (identifier)))
+    (variable_initialisation
+      name: (identifier))
+    body: (block
+      (variable_assignment
+        left: (identifier)
+        right: (string))
+      (variable_assignment
+        left: (dynamic_array
+          name: (identifier)
+          (angle_brackets
+            attribute: (number)))
+        right: (dynamic_array
+          name: (identifier)
+          (angle_brackets
+            attribute: (identifier))))
+      (call_subroutine_statement
+        name: (identifier)
+        (string)
+        (dynamic_array
+          name: (identifier)
+          (angle_brackets
+            attribute: (identifier)
+            value: (identifier)))
+        (identifier)
+        (variable_initialisation
+          name: (identifier)))
+      (if_statement
+        condition: (binary_expression
+          left: (dynamic_array
+            name: (identifier)
+            (angle_brackets
+              attribute: (number)))
+          operator: (identifier)
+          right: (string))
+        body: (block
+          (variable_assignment
+            left: (dynamic_array
+              name: (identifier)
+              (angle_brackets
+                attribute: (identifier)))
+            right: (dynamic_array
+              name: (identifier)
+              (angle_brackets
+                attribute: (number))))
+          (variable_assignment
+            left: (dynamic_array
+              name: (identifier)
+              (angle_brackets
+                attribute: (identifier)))
+            right: (dynamic_array
+              name: (identifier)
+              (angle_brackets
+                attribute: (number))))
+          (return_statement))))))
 
 ===
 GOSUB and Label Statement
 ===
 
-PRINT "CHOOSE A MENU (1, 2 OR 3)":
+PRINT "CHOOSE A MENU (1, 2 OR 3)"
 INPUT MENU
 * CONFIRM THAT RESPONSE IS VALID
 LOOP
 WHILE MENU < 1 OR MENU > 3 DO
    PRINT "ILLEGAL INPUT."
-   PRINT "CHOOSE A MENU (1, 2 OR 3)":
+   PRINT "CHOOSE A MENU (1, 2 OR 3)"
    INPUT MENU
 REPEAT
 * BRANCH TO REQUESTED MENU
@@ -562,7 +706,7 @@ MENU3:   *  CONTROL TRANSFERS HERE IF MENU 3 IS CHOSEN
 
 (source_file
   (print_statement
-    (string))
+    data: (string))
   (input_statement
     name: (identifier))
   (comment)
@@ -579,9 +723,9 @@ MENU3:   *  CONTROL TRANSFERS HERE IF MENU 3 IS CHOSEN
         right: (number)))
     body: (block
       (print_statement
-        (string))
+        data: (string))
       (print_statement
-        (string))
+        data: (string))
       (input_statement
         name: (identifier))))
   (comment)
@@ -601,3 +745,373 @@ MENU3:   *  CONTROL TRANSFERS HERE IF MENU 3 IS CHOSEN
   (label_statement)
   (comment)
   (return_statement))
+
+===
+INS statement
+===
+
+ARRAY = "H.L. Mencken":@AM:"John":@AM:"Mary"
+INS "Zelda" BEFORE ARRAY<2>
+
+---
+
+(source_file
+  (variable_assignment
+    left: (identifier)
+    right: (concatenate_operator
+      (string)
+      (concatenate_operator
+        (identifier)
+        (concatenate_operator
+          (string)
+          (concatenate_operator
+            (identifier)
+            (string))))))
+  (ins_statement
+    value: (string)
+    target: (dynamic_array
+      name: (identifier)
+      (angle_brackets
+        attribute: (number)))))
+
+===
+PRINT statement
+===
+
+PRINT ""
+PRINT "World!"
+PRINT("Hello World")
+* Print to a file represented by id '10'.
+PRINT ON 10 "Hello World!"
+
+---
+
+(source_file
+  (print_statement
+    data: (string))
+  (print_statement
+    data: (string))
+  (print_statement
+    data: (string))
+  (comment)
+  (print_statement
+    target: (number)
+    data: (string)))
+
+===
+CONVERT statement
+===
+
+NSTRING = "12,0,01,15,22"
+CONVERT "12" TO "34" IN NSTRING
+PRINT NSTRING
+
+NSTRING = "ABCDEFG"
+CONVERT "AC" TO "X" IN NSTRING
+PRINT NSTRING
+
+OLDSTR = "767,747,737,707"
+NEWSTR = CONVERT("7","8",OLDSTR)
+PRINT NEWSTR
+
+---
+
+(source_file
+  (variable_assignment
+    left: (identifier)
+    right: (string))
+  (convert_statement
+    from: (string)
+    to: (string)
+    target: (identifier))
+  (print_statement
+    data: (identifier))
+  (variable_assignment
+    left: (identifier)
+    right: (string))
+  (convert_statement
+    from: (string)
+    to: (string)
+    target: (identifier))
+  (print_statement
+    data: (identifier))
+  (variable_assignment
+    left: (identifier)
+    right: (string))
+  (variable_assignment
+    left: (identifier)
+    right: (parentheses_expression
+      name: (identifier)
+      (parentheses
+        parameter: (string)
+        parameter: (string)
+        parameter: (identifier))))
+  (print_statement
+    data: (identifier)))
+
+===
+DIM statement
+===
+
+DIM NAME(100),TITLES(100),DATES(100,2)
+
+DIM WAGES(50,100)
+DIM WAGES(100,10)
+
+---
+
+(source_file
+  (dim_statement
+    name: (identifier)
+    (number)
+    name: (identifier)
+    (number)
+    name: (identifier)
+    (number)
+    (number))
+  (dim_statement
+    name: (identifier)
+    (number)
+    (number))
+  (dim_statement
+    name: (identifier)
+    (number)
+    (number)))
+
+===
+MAT statement
+===
+
+DIM FEES(100,100)
+MAT FEES = 1.5
+
+DIM FEE1(2,4),FEE2(4,2)
+MAT FEE1 = MAT FEE2
+
+---
+
+(source_file
+  (dim_statement
+    name: (identifier)
+    (number)
+    (number))
+  (mat_statement
+    name: (identifier)
+    value: (number))
+  (dim_statement
+    name: (identifier)
+    (number)
+    (number)
+    name: (identifier)
+    (number)
+    (number))
+  (mat_statement
+    name: (identifier)
+    value: (identifier)))
+
+===
+EXECUTE statement
+===
+
+EXECUTE 'SELECT CLIENTS WITH COUNTRY = "Canada"'
+EXECUTE "SAVE.LIST 'canadians'"
+EXECUTE "!echo bob" CAPTURING OUTPUT
+
+---
+
+(source_file
+  (execute_statement
+    command: (string))
+  (execute_statement
+    command: (string))
+  (execute_statement
+    command: (string)
+    output: (identifier)))
+
+===
+READ statement
+===
+
+READ REC FROM A, "something" ELSE X = 1
+READ REC FROM HANDLE, NAME ELSE ABORT "BAD"
+
+READ CLIENT.REC FROM CLIENT, CLIENT.ID THEN
+  GOSUB PROCESS.CLIENT
+END
+
+READ CLIENT.REC FROM CLIENT, CLIENT.ID THEN
+  GOSUB PROCESS.CLIENT
+END ELSE
+  PRINT 'NO CLIENT REC FOR ':CLIENT.ID
+END
+
+---
+
+(source_file
+  (read_statement
+    variable: (identifier)
+    file: (identifier)
+    key: (string)
+    (variable_assignment
+      left: (identifier)
+      right: (number)))
+  (read_statement
+    variable: (identifier)
+    file: (identifier)
+    key: (identifier)
+    (abort_statement
+      (string)))
+  (read_statement
+    variable: (identifier)
+    file: (identifier)
+    key: (identifier)
+    body: (block
+      (gosub_statement
+        (identifier))))
+  (read_statement
+    variable: (identifier)
+    file: (identifier)
+    key: (identifier)
+    body: (block
+      (gosub_statement
+        (identifier)))
+    body: (block
+      (print_statement
+        data: (concatenate_operator
+          (string)
+          (identifier))))))
+
+===
+READU statement
+===
+
+READU CUST.REC FROM CUST.FILE, "1001" LOCKED
+    PRINT "Record 1001 is currently locked by another user."
+END THEN
+    PRINT "Successfully read and locked record:"
+    PRINT CUST.REC
+END ELSE
+    PRINT "Record 1001 does not exist."
+END
+
+READU R.CUSTOMER FROM F.CUSTOMER,K.CUSTOMER ON ERROR
+  * Fatal Read Error Occurred STATUS() will return 2
+  FATAL.ERROR = 1
+END LOCKED
+  * Record is Already
+  RECORD.LOCKED.BY.ANOTHER.USER = 1
+  CRT "Record Locked by"
+  CRT "UID is " : STATUS()
+  CRT "UDTNO is " : SYSTEM(53)
+END THEN
+  * The Record was Found and Locked
+  RECORD.FOUND = 1
+  CRT "Record found and lock ownership set"
+END ELSE
+  * The Record was not Found and Locked
+  RECORD.FOUND = 0
+  CRT "Record not found and lock ownership set"
+  * To Unlock the Record a RELEASE F.CUSTOMER,K.CUSTOMER is needed
+END
+
+---
+
+(source_file
+  (readu_statement
+    variable: (identifier)
+    file: (identifier)
+    key: (string)
+    body: (block
+      (print_statement
+        data: (string)))
+    body: (block
+      (print_statement
+        data: (string))
+      (print_statement
+        data: (identifier)))
+    body: (block
+      (print_statement
+        data: (string))))
+  (readu_statement
+    variable: (identifier)
+    file: (identifier)
+    key: (identifier)
+    (comment)
+    body: (block
+      (variable_assignment
+        left: (identifier)
+        right: (number)))
+    (comment)
+    body: (block
+      (variable_assignment
+        left: (identifier)
+        right: (number))
+      (crt_statement
+        (string))
+      (crt_statement
+        (concatenate_operator
+          (string)
+          (parentheses_expression
+            name: (identifier)
+            (parentheses))))
+      (crt_statement
+        (concatenate_operator
+          (string)
+          (parentheses_expression
+            name: (identifier)
+            (parentheses
+              parameter: (number))))))
+    (comment)
+    body: (block
+      (variable_assignment
+        left: (identifier)
+        right: (number))
+      (crt_statement
+        (string)))
+    (comment)
+    body: (block
+      (variable_assignment
+        left: (identifier)
+        right: (number))
+      (crt_statement
+        (string)))
+    (comment)))
+
+===
+WRITE statement
+===
+
+WRITE CLIENT.REC ON CLIENT_FILE,CLIENT_NUMBER
+WRITE ORDER.REC ON ORDERS_FILE,ORDER_NUMBER
+
+WRITE OVERSTOCK TO FNAME,"OS"
+
+---
+
+(source_file
+  (write_statement
+    data: (identifier)
+    file: (identifier)
+    key: (identifier))
+  (write_statement
+    data: (identifier)
+    file: (identifier)
+    key: (identifier))
+  (write_statement
+    data: (identifier)
+    file: (identifier)
+    key: (string)))
+
+===
+WRITEU statement
+===
+
+WRITEU IDEA.57 ON IDEAS,'LAST'
+
+---
+
+(source_file
+  (writeu_statement
+    data: (identifier)
+    file: (identifier)
+    key: (string)))

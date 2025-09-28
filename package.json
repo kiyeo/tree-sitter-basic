@@ -5,7 +5,7 @@
   "main": "index.js",
   "types": "bindings/node",
   "scripts": {
-    "install": "node-gyp-build",
+    "install": "CXXFLAGS='-std=c++20' node-gyp-build",
     "lint": "eslint grammar.js",
     "lint:fix": "eslint --fix grammar.js",
     "prebuildify": "prebuildify --napi --strip",
